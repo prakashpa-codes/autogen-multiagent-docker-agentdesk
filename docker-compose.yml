@@ -10,21 +10,21 @@ services:
     build: ./frontend
     environment:
       BACKEND_URL: http://backend:8000
-      # Trust X-Forwarded-For from nginx so Streamlit sees the visitor's real IP.
-      # Safe only because the frontend has no public port. Only nginx can reach it.
+      # Trust X-Forwarded-For from Traefik so Streamlit sees the visitor's real IP.
+      # Safe only because the frontend's port is bound to 127.0.0.1, so visitors cannot reach it directly.
       FORWARDED_ALLOW_IPS: "*"
+    ports:
+      # Local testing: open http://localhost:8502. 127.0.0.1 keeps it off the public internet.
+      # 8502, not 8501, because another app on the VPS already uses 8501.
+      - "127.0.0.1:8502:8501"
+    labels:
+      # Traefik on the VPS reads these labels and routes the domain to this container.
+      # On a laptop without Traefik they are ignored.
+      - traefik.enable=true
+      - traefik.http.routers.agentdesk.rule=Host(`autogendemo.labspace.tech`)
+      - traefik.http.routers.agentdesk.entrypoints=websecure
+      - traefik.http.routers.agentdesk.tls.certresolver=letsencrypt
+      - traefik.http.services.agentdesk.loadbalancer.server.port=8501
     depends_on:
       - backend
-    restart: unless-stopped
-
-  nginx:
-    image: nginx:stable-alpine
-    ports:
-      # Defaults to port 80. On the VPS, .env sets NGINX_PORT=127.0.0.1:8080 so only host nginx can reach it.
-      - "${NGINX_PORT:-80}:80"
-    volumes:
-      # Our config replaces the image's default site config. ":ro" = read-only.
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - frontend
     restart: unless-stopped

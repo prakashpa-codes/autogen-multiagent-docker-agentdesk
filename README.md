@@ -6,8 +6,8 @@
 ![AutoGen](https://img.shields.io/badge/AutoGen_AgentChat-0.7-5C2D91)
 ![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688?logo=fastapi&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-frontend-FF4B4B?logo=streamlit&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker_Compose-3_services-2496ED?logo=docker&logoColor=white)
-![Nginx](https://img.shields.io/badge/Nginx-reverse_proxy-009639?logo=nginx&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker_Compose-2_services-2496ED?logo=docker&logoColor=white)
+![Traefik](https://img.shields.io/badge/Traefik-reverse_proxy_+_HTTPS-24A1C1?logo=traefikproxy&logoColor=white)
 
 You type a request. A **Main Agent** reads it, decides which specialist agents it actually needs, hands each one a task, and combines their answers. The UI lights up each agent while it works, so you can watch the decision happen.
 
@@ -42,7 +42,7 @@ In this video (with narration, turn the sound on):
 | **One conversation per user.** Session IDs give every browser tab its own agents and memory | [`backend/main.py`](backend/main.py) |
 | **Basic protection for a public demo.** Input/output limits, idle cleanup and an optional per-IP chat limit | [`.env.example`](.env.example), Configuration section below |
 | **Frontend and backend as separate services.** They only talk over HTTP | [`frontend/app.py`](frontend/app.py) ↔ [`backend/main.py`](backend/main.py) |
-| **Docker Compose + Nginx.** Only Nginx is public; the app containers stay on a private network | [`docker-compose.yml`](docker-compose.yml), [`nginx/nginx.conf`](nginx/nginx.conf) |
+| **Docker Compose + Traefik.** Traefik on the VPS routes the domain and handles HTTPS; the backend stays on a private network | [`docker-compose.yml`](docker-compose.yml) |
 
 ---
 
@@ -115,15 +115,16 @@ AutoGen agents have two separate ways of "remembering", and this project keeps t
 
 ```mermaid
 flowchart LR
-    B["🌐 Browser"] -->|"HTTP + WebSocket<br/>port 80"| N
+    B["🌐 Browser"] -->|"HTTPS + WebSocket<br/>port 443"| T["Traefik<br/>on the VPS<br/>routing + HTTPS"]
+    T -->|"frontend:8501"| F
     subgraph D["Docker Compose · private network"]
-        N["Nginx<br/>reverse proxy<br/><b>only public service</b>"] -->|"proxy_pass<br/>frontend:8501"| F["Streamlit<br/>frontend"]
+        F["Streamlit<br/>frontend"]
         F -->|"HTTP<br/>backend:8000"| BE["FastAPI<br/>+ AutoGen agents"]
     end
     BE -->|HTTPS| O["OpenAI API<br/>gpt-4o-mini"]
 ```
 
-- **Nginx** is the only container with a published port. It forwards traffic to Streamlit, passes WebSocket upgrades through, allows long-running answers (5-minute timeout), and forwards the visitor's IP.
+- **Traefik** runs on the VPS (outside this project) and owns ports 80/443. It reads the `labels` on the `frontend` service, routes `autogendemo.labspace.tech` to Streamlit, gets a free Let's Encrypt certificate, and passes WebSockets and the visitor's IP through.
 - **Streamlit** is a Python server, so it calls the backend from *inside* Docker. The browser never talks to the backend directly, which is why the backend needs no public route at all.
 - **FastAPI** owns the agents, the sessions and the limits. The OpenAI key is given only to this container.
 - Containers find each other by **service name** (`frontend`, `backend`) on the network Compose creates.
@@ -169,7 +170,7 @@ cp .env.example .env        # Windows PowerShell: Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Open **http://localhost**.
+Open **http://localhost:8502**.
 
 | Command | What it does |
 |---|---|
@@ -251,10 +252,8 @@ All settings live in `.env` (see [`.env.example`](.env.example)). The same code 
 │   ├── .streamlit/config.toml
 │   ├── Dockerfile
 │   └── requirements.txt
-├── nginx/
-│   └── nginx.conf         # Reverse proxy: WebSockets, timeouts, real client IP
 ├── app.py                 # Console version using the same agents
-├── docker-compose.yml     # nginx (public) + frontend + backend (private)
+├── docker-compose.yml     # frontend (Traefik labels) + backend (private)
 └── .env.example           # Settings template. Copy it to .env
 ```
 
@@ -271,9 +270,9 @@ These are deliberate simplifications for a demo:
 - [x] Console multi-agent app with routing, tools and memory
 - [x] FastAPI backend with sessions and limits
 - [x] Streamlit frontend with live agent flow
-- [x] Docker Compose with Nginx as the only public entry point
-- [ ] Deploy to a VPS with a domain and HTTPS
+- [x] Docker Compose with a private backend
+- [ ] Deploy to a VPS behind Traefik with a domain and HTTPS
 
 ## 🧰 Tech stack
 
-Microsoft AutoGen AgentChat 0.7 · OpenAI gpt-4o-mini · FastAPI · Uvicorn · Streamlit · Nginx · Docker Compose · Python 3.13
+Microsoft AutoGen AgentChat 0.7 · OpenAI gpt-4o-mini · FastAPI · Uvicorn · Streamlit · Traefik · Docker Compose · Python 3.13
