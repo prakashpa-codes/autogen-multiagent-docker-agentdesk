@@ -20,7 +20,8 @@ services:
   nginx:
     image: nginx:stable-alpine
     ports:
-      - "80:80"
+      # Defaults to port 80. On the VPS, .env sets NGINX_PORT=127.0.0.1:8080 so only host nginx can reach it.
+      - "${NGINX_PORT:-80}:80"
     volumes:
       # Our config replaces the image's default site config. ":ro" = read-only.
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
