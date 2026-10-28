@@ -2,6 +2,8 @@
 
 **A small, complete multi-agent application built with Microsoft AutoGen, showing how agents decide, delegate and remember.**
 
+🔗 **Live demo:** https://autogendemo.labspace.tech
+
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
 ![AutoGen](https://img.shields.io/badge/AutoGen_AgentChat-0.7-5C2D91)
 ![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688?logo=fastapi&logoColor=white)
@@ -271,7 +273,7 @@ These are deliberate simplifications for a demo:
 - [x] FastAPI backend with sessions and limits
 - [x] Streamlit frontend with live agent flow
 - [x] Docker Compose with a private backend
-- [ ] Deploy to a VPS behind Traefik with a domain and HTTPS
+- [x] Deploy to a VPS behind Traefik with a domain and HTTPS
 
 ## 🧰 Tech stack
 
