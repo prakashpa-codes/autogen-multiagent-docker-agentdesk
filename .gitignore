@@ -1,0 +1,16 @@
+# Secrets: never commit these
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Editor
+.vscode/
+
+# Raw demo recordings (only the edited video is committed)
+docs/raw-demo*
+docs/AgentDesk.mp4

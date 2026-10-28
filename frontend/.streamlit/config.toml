@@ -1,0 +1,10 @@
+[client]
+# Hide developer options such as the "Deploy" button.
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+primaryColor = "#4F46E5"
+baseRadius = "medium"
